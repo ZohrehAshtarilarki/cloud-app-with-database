@@ -45,6 +45,7 @@ class Learner(models.Model):
         choices=OCCUPATION_CHOICES,
         default=STUDENT
     )
+    dob = models.DateField(default='now')
     social_link = models.URLField(max_length=200)
 
     def __str__(self):
@@ -75,6 +76,9 @@ class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     content = models.TextField()
 
+    def __str__(self):
+        return "Title: " + self.title
+
 
 # Enrollment model
 # <HINT> Once a user enrolled a class, an enrollment entry should be created between the user and course
@@ -94,31 +98,50 @@ class Enrollment(models.Model):
     mode = models.CharField(max_length=5, choices=COURSE_MODES, default=AUDIT)
     rating = models.FloatField(default=5.0)
 
-# Question model
-class Question(models.Model):
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    question_text = models.CharField(max_length=200)
-    grade_point = models.FloatField()
 
+# <HINT> Create a Question Model with:
+    # Used to persist question content for a course
+    # Has a One-To-Many (or Many-To-Many if you want to reuse questions) relationship with course
+    # Has a grade point for each question
+    # Has question content
+    # Other fields and methods you would like to design
+class Question(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    about = models.CharField(max_length=100, default="about")
+    question_text = models.TextField()
+    grade = models.FloatField(default=0.0)
+
+    # <HINT> A sample model method to calculate if learner get the score of the question
     def is_get_score(self, selected_ids):
         all_answers = self.choice_set.filter(is_correct=True).count()
         selected_correct = self.choice_set.filter(is_correct=True, id__in=selected_ids).count()
-        if all_answers == selected_correct:
+        selected_not_correct = self.choice_set.filter(is_correct=False, id__in=selected_ids).count()
+        # Ensures that only correct choices are ticked and not the others
+        if all_answers == selected_correct and selected_not_correct == 0 :
             return True
         else:
             return False
+    
+    def __str__(self):
+        return "About: "+self.about
 
-# Choice model
+
+#  <HINT> Create a Choice Model with:
+    # Used to persist choice content for a question
+    # One-To-Many (or Many-To-Many if you want to reuse choices) relationship with Question
+    # Choice content
+    # Indicate if this choice of the question is a correct one or not
+    # Other fields and methods you would like to design
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     choice_text = models.CharField(max_length=200)
     is_correct = models.BooleanField(default=False)
 
-    def __str__(self):
-        return self.choice_text
-
-# Submission model
+# <HINT> The submission model
+# One enrollment could have multiple submission
+# One submission could have multiple choices
+# One choice could belong to multiple submissions
 class Submission(models.Model):
     enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
     choices = models.ManyToManyField(Choice)
+#    Other fields and methods you would like to design
